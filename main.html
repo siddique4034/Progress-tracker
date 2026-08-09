@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>syscall.log — CS Progress</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0b0e0f;
+    --bg-raised: #12171a;
+    --bg-card: #151b1e;
+    --border: #232b2f;
+    --border-hi: #3a464c;
+    --text: #d8e0e2;
+    --text-dim: #7c8a8f;
+    --text-faint: #4b565a;
+    --amber: #e8a33d;
+    --amber-dim: #8a6526;
+    --green: #5fd97a;
+    --green-dim: #2a5f36;
+    --cyan: #5bc8d6;
+    --red: #d9615f;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 10% -10%, rgba(232,163,61,0.06), transparent),
+      radial-gradient(ellipse 700px 400px at 100% 10%, rgba(91,200,214,0.05), transparent);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 28px 18px 60px;
+  }
+
+  .wrap{ max-width: 720px; margin: 0 auto; }
+
+  /* ---------- Header / boot sequence ---------- */
+  .boot{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    line-height: 1.7;
+    margin-bottom: 18px;
+    border-left: 2px solid var(--border);
+    padding-left: 12px;
+  }
+  .boot .ok{ color: var(--green-dim); }
+  .boot .tick{ color: var(--text-dim); }
+
+  header{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand{
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .brand span{ color: var(--amber); }
+  .subtitle{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .uptime{
+    font-family: var(--mono);
+    font-size: 11px;
+    text-align: right;
+    color: var(--text-dim);
+  }
+  .uptime b{ color: var(--amber); font-size: 20px; display:block; font-weight: 700; }
+
+  /* ---------- Overall status bar ---------- */
+  .status-panel{
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .status-row{
+    display:flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .status-row b{ color: var(--text); }
+  .bigbar{
+    height: 10px;
+    background: #0a0d0e;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bigbar-fill{
+    height: 100%;
+    background: linear-gradient(90deg, var(--amber-dim), var(--amber));
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    border-radius: 2px;
+  }
+  .streak-row{
+    display:flex;
+    gap: 18px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+    flex-wrap: wrap;
+  }
+  .streak-item{ font-family: var(--mono); }
+  .streak-item .n{ font-size: 20px; font-weight: 700; color: var(--cyan); }
+  .streak-item .l{ font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ---------- Module (topic group) ---------- */
+  .module{
+    margin-bottom: 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-card);
+    overflow: hidden;
+  }
+  .module-head{
+    display:flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+  }
+  .module-head:hover{ background: rgba(255,255,255,0.015); }
+  .module-head.open{ border-bottom-color: var(--border); }
+  .module-title-group{ display:flex; align-items:center; gap: 10px; }
+  .module-icon{ font-family: var(--mono); color: var(--text-faint); font-size: 12px; width: 14px; }
+  .module-name{ font-weight: 600; font-size: 14.5px; color: var(--text); }
+  .module-tag{
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--bg);
+    background: var(--text-faint);
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 4px;
+  }
+  .module-meta{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .module-pct{ min-width: 34px; text-align:right; }
+  .module-bar-mini{
+    width: 60px;
+    height: 5px;
+    background: #0a0d0e;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .module-bar-mini-fill{ height:100%; background: var(--cyan); transition: width 0.4s; }
+
+  .module-body{ display:none; padding: 4px 8px 12px; }
+  .module-body.open{ display:block; }
+
+  .item{
+    display:flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 4px;
+    font-size: 13.5px;
+  }
+  .item:hover{ background: rgba(255,255,255,0.02); }
+  .item.done .item-label{ color: var(--text-faint); text-decoration: line-through; text-decoration-color: var(--text-faint); }
+  .checkbox{
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border-hi);
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 10px;
+    color: var(--bg);
+    transition: all 0.15s;
+  }
+  .item.done .checkbox{ background: var(--green); border-color: var(--green); }
+  .item-label{ flex: 1; line-height: 1.4; color: var(--text); cursor: pointer; }
+
+  .add-row{
+    display:flex;
+    gap: 8px;
+    padding: 8px 10px 4px;
+  }
+  .add-row input{
+    flex: 1;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    outline: none;
+  }
+  .add-row input:focus{ border-color: var(--amber-dim); }
+  .add-row button{
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .add-row button:hover{ color: var(--amber); border-color: var(--amber-dim); }
+
+  /* ---------- Log / motivation footer ---------- */
+  .log-panel{
+    margin-top: 26px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    line-height: 1.8;
+  }
+  .log-panel .line{ display:flex; gap: 8px; }
+  .log-panel .tag{ color: var(--green-dim); flex-shrink:0; }
+  .msg-line{ color: var(--amber); }
+
+  .reset-link{
+    margin-top: 18px;
+    text-align: center;
+  }
+  .reset-link button{
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .reset-link button:hover{ color: var(--red); }
+
+  ::selection{ background: var(--amber-dim); color: white; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="boot" id="bootLog"></div>
+
+  <header>
+    <div>
+      <div class="brand">syscall<span>.</span>log</div>
+      <div class="subtitle">// CS fundamentals tracker — kernel to backend</div>
+    </div>
+    <div class="uptime">
+      <b id="overallPctHead">0%</b>
+      SYSTEM READY
+    </div>
+  </header>
+
+  <div class="status-panel">
+    <div class="status-row">
+      <span>TOTAL PROGRESS</span>
+      <b id="overallFraction">0 / 0 modules complete</b>
+    </div>
+    <div class="bigbar"><div class="bigbar-fill" id="bigbarFill" style="width:0%"></div></div>
+    <div class="streak-row">
+      <div class="streak-item"><div class="n" id="streakCount">0</div><div class="l">day streak</div></div>
+      <div class="streak-item"><div class="n" id="doneCount">0</div><div class="l">topics done</div></div>
+      <div class="streak-item"><div class="n" id="totalCount">0</div><div class="l">total topics</div></div>
+      <div class="streak-item"><div class="n" id="lastActive">—</div><div class="l">last logged</div></div>
+    </div>
+  </div>
+
+  <div id="modulesContainer"></div>
+
+  <div class="log-panel" id="motivationLog"></div>
+
+  <div class="reset-link"><button id="resetBtn">reset all progress</button></div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'cs-progress-data-v1';
+
+const DEFAULT_DATA = {
+  streak: 0,
+  lastActiveDate: null,
+  modules: [
+    {
+      id: 'os',
+      name: 'Operating Systems',
+      tag: 'kernel',
+      items: [
+        { t: 'Boot sequence (BIOS/UEFI → bootloader → kernel init)', done: true },
+        { t: 'Kernel space vs user space', done: true },
+        { t: 'Multiprogramming vs multitasking vs multiprocessing', done: true },
+        { t: 'Virtual memory & paging', done: true },
+        { t: 'Process vs thread', done: false },
+        { t: 'CPU scheduling algorithms (FCFS, SJF, RR, priority)', done: false },
+        { t: 'Deadlocks — conditions, prevention, avoidance', done: false },
+        { t: 'Semaphores & mutexes', done: false },
+        { t: 'Memory management (segmentation, fragmentation)', done: false },
+        { t: 'File systems & I/O management', done: false }
+      ]
+    },
+    {
+      id: 'dsa',
+      name: 'Data Structures & Algorithms',
+      tag: 'C/C++',
+      items: [
+        { t: 'Linked lists (singly, doubly, circular)', done: true },
+        { t: "Floyd's cycle detection", done: true },
+        { t: 'Binary search trees & traversals', done: true },
+        { t: 'Stacks & queues', done: false },
+        { t: 'Hashing & hash tables', done: false },
+        { t: 'Heaps & priority queues', done: false },
+        { t: 'Graphs — BFS/DFS', done: false },
+        { t: 'Dynamic programming basics', done: false },
+        { t: 'Sorting algorithms & complexity tradeoffs', done: false },
+        { t: 'Tries', done: false }
+      ]
+    },
+    {
+      id: 'networks',
+      name: 'Computer Networks',
+      tag: 'infra',
+      items: [
+        { t: 'OSI model layers', done: true },
+        { t: 'TCP/IP model', done: true },
+        { t: 'TCP three-way handshake', done: true },
+        { t: 'DNS resolution', done: true },
+        { t: 'IP addressing & subnetting', done: false },
+        { t: 'HTTP/HTTPS request lifecycle', done: false },
+        { t: 'Load balancing basics', done: false }
+      ]
+    },
+    {
+      id: 'lang',
+      name: 'Programming Languages',
+      tag: 'core',
+      items: [
+        { t: 'Compilation vs interpretation', done: true },
+        { t: 'Bytecode vs machine code', done: true },
+        { t: 'JVM & portability', done: true },
+        { t: "CPython's execution model", done: true },
+        { t: 'Memory management across C/C++/Java/Python', done: false },
+        { t: 'Java core syntax & OOP', done: false }
+      ]
+    },
+    {
+      id: 'backend',
+      name: 'Backend & Django',
+      tag: 'applied',
+      items: [
+        { t: 'Django middleware architecture', done: true },
+        { t: 'DRY / SRP / Separation of Concerns', done: true },
+        { t: 'MongoDB & Mongoose basics', done: false },
+        { t: 'Django ORM query optimization', done: false },
+        { t: 'REST API design principles', done: false },
+        { t: 'Authentication & session management', done: false },
+        { t: 'Caching strategies', done: false },
+        { t: 'Database indexing', done: false }
+      ]
+    },
+    {
+      id: 'tools',
+      name: 'Dev Tooling & Environment',
+      tag: 'workflow',
+      items: [
+        { t: 'VS Code architecture (Electron, Monaco, LSP)', done: true },
+        { t: 'Vim survival commands', done: true },
+        { t: 'Git branching & rebase workflows', done: false },
+        { t: 'Docker basics', done: false }
+      ]
+    },
+    {
+      id: 'interview',
+      name: 'Interview Readiness',
+      tag: 'career',
+      items: [
+        { t: 'Django technical Q&A prep', done: false },
+        { t: 'DSA problem patterns', done: false },
+        { t: 'Behavioral interview stories (STAR method)', done: false },
+        { t: 'System design fundamentals', done: false },
+        { t: 'Mock interview practice', done: false }
+      ]
+    }
+  ]
+};
+
+let state = null;
+let openModules = new Set(['os']); // OS open by default since that's top of mind
+
+const bootLines = [
+  'mount /dev/knowledge  ................ OK',
+  'init subsystem: os-fundamentals  ..... OK',
+  'init subsystem: dsa  ................. OK',
+  'init subsystem: networks  ............ OK',
+  'loading progress state from storage  . OK',
+];
+
+function renderBoot(){
+  const el = document.getElementById('bootLog');
+  el.innerHTML = bootLines.map(l => {
+    const parts = l.split('OK');
+    return `<div><span class="tick">${parts[0]}</span><span class="ok">OK</span></div>`;
+  }).join('');
+}
+
+async function loadState(){
+  try{
+    const result = await window.storage.get(STORAGE_KEY, false);
+    if(result && result.value){
+      state = JSON.parse(result.value);
+      // merge in any new default modules/items not yet in saved state (schema evolution)
+      DEFAULT_DATA.modules.forEach(dm => {
+        const existing = state.modules.find(m => m.id === dm.id);
+        if(!existing){
+          state.modules.push(JSON.parse(JSON.stringify(dm)));
+        } else {
+          dm.items.forEach(di => {
+            if(!existing.items.some(i => i.t === di.t)){
+              existing.items.push(JSON.parse(JSON.stringify(di)));
+            }
+          });
+        }
+      });
+    } else {
+      state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
+  } catch(e){
+    state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }
+  updateStreak();
+  render();
+}
+
+async function saveState(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+  } catch(e){
+    console.error('save failed', e);
+  }
+}
+
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function updateStreak(){
+  const today = todayStr();
+  if(state.lastActiveDate === today) return; // already counted today
+  if(!state.lastActiveDate){
+    return; // don't bump streak just for loading; only bump on actual check-off
+  }
+  const last = new Date(state.lastActiveDate);
+  const now = new Date(today);
+  const diffDays = Math.round((now - last) / 86400000);
+  if(diffDays > 1){
+    state.streak = 0; // streak broken
+  }
+}
+
+function markActivity(){
+  const today = todayStr();
+  if(state.lastActiveDate === today) return;
+  const last = state.lastActiveDate ? new Date(state.lastActiveDate) : null;
+  const now = new Date(today);
+  if(last){
+    const diffDays = Math.round((now - last) / 86400000);
+    if(diffDays === 1){
+      state.streak += 1;
+    } else if(diffDays > 1){
+      state.streak = 1;
+    }
+    // diffDays === 0 handled by early return above
+  } else {
+    state.streak = 1;
+  }
+  state.lastActiveDate = today;
+}
+
+function computeModuleStats(mod){
+  const done = mod.items.filter(i => i.done).length;
+  const total = mod.items.length;
+  return { done, total, pct: total ? Math.round((done/total)*100) : 0 };
+}
+
+function computeOverall(){
+  let done = 0, total = 0;
+  state.modules.forEach(m => {
+    done += m.items.filter(i => i.done).length;
+    total += m.items.length;
+  });
+  return { done, total, pct: total ? Math.round((done/total)*100) : 0 };
+}
+
+const motivationMessages = {
+  0: "// clean slate. every kernel starts at boot 0x00.",
+  low: "// early cycles. init sequence is the hardest part — you're past it.",
+  mid: "// halfway through the call stack. context is building fast.",
+  high: "// deep in the critical path now. this is where retention compounds.",
+  done: "// module complete. commit this to long-term memory and move on."
+};
+
+function getMotivationLine(pct){
+  if(pct === 0) return motivationMessages[0];
+  if(pct < 40) return motivationMessages.low;
+  if(pct < 75) return motivationMessages.mid;
+  if(pct < 100) return motivationMessages.high;
+  return motivationMessages.done;
+}
+
+function render(){
+  const overall = computeOverall();
+  document.getElementById('overallPctHead').textContent = overall.pct + '%';
+  document.getElementById('overallFraction').textContent = `${overall.done} / ${overall.total} topics complete`;
+  document.getElementById('bigbarFill').style.width = overall.pct + '%';
+  document.getElementById('doneCount').textContent = overall.done;
+  document.getElementById('totalCount').textContent = overall.total;
+  document.getElementById('streakCount').textContent = state.streak;
+  document.getElementById('lastActive').textContent = state.lastActiveDate ?
+    (state.lastActiveDate === todayStr() ? 'today' : state.lastActiveDate) : '—';
+
+  const container = document.getElementById('modulesContainer');
+  container.innerHTML = '';
+
+  state.modules.forEach(mod => {
+    const stats = computeModuleStats(mod);
+    const isOpen = openModules.has(mod.id);
+
+    const modEl = document.createElement('div');
+    modEl.className = 'module';
+
+    const head = document.createElement('div');
+    head.className = 'module-head' + (isOpen ? ' open' : '');
+    head.innerHTML = `
+      <div class="module-title-group">
+        <span class="module-icon">${isOpen ? '▾' : '▸'}</span>
+        <span class="module-name">${mod.name}</span>
+        <span class="module-tag">${mod.tag}</span>
+      </div>
+      <div class="module-meta">
+        <div class="module-bar-mini"><div class="module-bar-mini-fill" style="width:${stats.pct}%"></div></div>
+        <span class="module-pct">${stats.pct}%</span>
+      </div>
+    `;
+    head.addEventListener('click', () => {
+      if(openModules.has(mod.id)) openModules.delete(mod.id);
+      else openModules.add(mod.id);
+      render();
+    });
+    modEl.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'module-body' + (isOpen ? ' open' : '');
+
+    mod.items.forEach((item, idx) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'item' + (item.done ? ' done' : '');
+      itemEl.innerHTML = `
+        <div class="checkbox">${item.done ? '✓' : ''}</div>
+        <div class="item-label">${escapeHtml(item.t)}</div>
+      `;
+      itemEl.addEventListener('click', () => {
+        item.done = !item.done;
+        if(item.done) markActivity();
+        saveState();
+        render();
+      });
+      body.appendChild(itemEl);
+    });
+
+    const addRow = document.createElement('div');
+    addRow.className = 'add-row';
+    addRow.innerHTML = `
+      <input type="text" placeholder="add a topic to ${mod.name}..." />
+      <button>add</button>
+    `;
+    const input = addRow.querySelector('input');
+    const btn = addRow.querySelector('button');
+    const addItem = () => {
+      const val = input.value.trim();
+      if(!val) return;
+      mod.items.push({ t: val, done: false });
+      input.value = '';
+      saveState();
+      render();
+    };
+    btn.addEventListener('click', addItem);
+    input.addEventListener('keydown', e => { if(e.key === 'Enter') addItem(); });
+    body.appendChild(addRow);
+
+    modEl.appendChild(body);
+    container.appendChild(modEl);
+  });
+
+  // motivation log
+  const logEl = document.getElementById('motivationLog');
+  const line = getMotivationLine(overall.pct);
+  logEl.innerHTML = `
+    <div class="line"><span class="tag">[log]</span><span class="msg-line">${line}</span></div>
+    <div class="line"><span class="tag">[log]</span><span>streak: ${state.streak} day${state.streak === 1 ? '' : 's'} — ${state.streak >= 3 ? 'momentum is real, protect it.' : 'log a topic today to start building one.'}</span></div>
+  `;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if(!confirm('Reset all progress? This clears every checked topic and yo
