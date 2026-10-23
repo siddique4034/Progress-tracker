@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>syscall.log — CS Progress</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="boot" id="bootLog"></div>
+
+    <header>
+      <div>
+        <div class="brand">syscall<span>.</span>log</div>
+        <div class="subtitle">// CS fundamentals tracker — kernel to backend</div>
+      </div>
+      <div class="uptime">
+        <b id="overallPctHead">0%</b>
+        SYSTEM READY
+      </div>
+    </header>
+
+    <div class="status-panel">
+      <div class="status-row">
+        <span>TOTAL PROGRESS</span>
+        <b id="overallFraction">0 / 0 modules complete</b>
+      </div>
+      <div class="bigbar"><div class="bigbar-fill" id="bigbarFill" style="width:0%"></div></div>
+      <div class="streak-row">
+        <div class="streak-item"><div class="n" id="streakCount">0</div><div class="l">day streak</div></div>
+        <div class="streak-item"><div class="n" id="doneCount">0</div><div class="l">topics done</div></div>
+        <div class="streak-item"><div class="n" id="totalCount">0</div><div class="l">total topics</div></div>
+        <div class="streak-item"><div class="n" id="lastActive">—</div><div class="l">last logged</div></div>
+      </div>
+    </div>
+
+    <div id="modulesContainer"></div>
+
+    <div class="log-panel" id="motivationLog"></div>
+
+    <div class="reset-link"><button id="resetBtn" type="button">reset all progress</button></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
